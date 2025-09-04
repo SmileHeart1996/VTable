@@ -12,6 +12,10 @@ export const menus = [
   },
   {
     path: 'gantt',
+    name: 'gantt-borderLineWidth-array-config'
+  },
+  {
+    path: 'gantt',
     name: 'gantt-hour'
   },
   {
@@ -37,6 +41,10 @@ export const menus = [
   {
     path: 'gantt',
     name: 'gantt-month'
+  },
+  {
+    path: 'gantt',
+    name: 'gantt-task-bar-move'
   },
   {
     path: 'gantt',

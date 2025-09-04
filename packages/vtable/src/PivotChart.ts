@@ -60,7 +60,8 @@ import {
   registerLegend,
   registerMenu,
   registerTitle,
-  registerTooltip
+  registerTooltip,
+  registerAnimation
 } from './components';
 import {
   registerChartCell,
@@ -81,7 +82,7 @@ registerLegend();
 registerMenu();
 registerTitle();
 registerTooltip();
-
+registerAnimation();
 registerChartCell();
 registerCheckboxCell();
 registerImageCell();
@@ -126,6 +127,8 @@ export class PivotChart extends BaseTable implements PivotChartAPI {
     this.internalProps.columnResizeType = options.resize?.columnResizeType ?? options.columnResizeType ?? 'column';
     this.internalProps.rowResizeType = options.resize?.rowResizeType ?? options.rowResizeType ?? 'row';
     this.internalProps.dataConfig = { isPivotChart: true };
+    this.internalProps.columnWidthConfig = options.columnWidthConfig;
+    this.internalProps.columnWidthConfigForRowHeader = options.columnWidthConfigForRowHeader;
     this._axes = isArray(options.axes) ? options.axes : [];
 
     let columnDimensionTree;
@@ -263,7 +266,7 @@ export class PivotChart extends BaseTable implements PivotChartAPI {
     if (options.title) {
       const Title = Factory.getComponent('title') as ITitleComponent;
       this.internalProps.title = new Title(options.title, this);
-      this.scenegraph.resize();
+      // this.scenegraph.resize();//下面有个resize了 所以这个可以去掉
     }
     if (this.options.emptyTip) {
       if (this.internalProps.emptyTip) {
@@ -276,6 +279,10 @@ export class PivotChart extends BaseTable implements PivotChartAPI {
     }
     //为了确保用户监听得到这个事件 这里做了异步 确保vtable实例已经初始化完成
     setTimeout(() => {
+      if (this.isReleased) {
+        return;
+      }
+      this.resize();
       this.fireListeners(TABLE_EVENT_TYPE.INITIALIZED, null);
     }, 0);
   }
@@ -331,7 +338,8 @@ export class PivotChart extends BaseTable implements PivotChartAPI {
     internalProps.columnResizeType = options.resize?.columnResizeType ?? options.columnResizeType ?? 'column';
     internalProps.rowResizeType = options.resize?.rowResizeType ?? options.rowResizeType ?? 'row';
     internalProps.dataConfig = { isPivotChart: true };
-
+    this.internalProps.columnWidthConfig = options.columnWidthConfig;
+    this.internalProps.columnWidthConfigForRowHeader = options.columnWidthConfigForRowHeader;
     this._axes = isArray(options.axes) ? options.axes : [];
 
     //TODO 这里需要加上判断 dataConfig是否有配置变化

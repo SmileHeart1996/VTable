@@ -79,6 +79,11 @@ import { temporarilyUpdateSelectRectStyle } from './select/update-select-style';
 import type { CheckboxContent } from './component/checkbox-content';
 // import { contextModule } from './context/module';
 
+import { FederatedPointerEvent } from '@src/vrender';
+import { TABLE_EVENT_TYPE } from '../core/TABLE_EVENT_TYPE';
+import { getCellEventArgsSet } from '../event/util';
+import type { SceneEvent } from '../event/util';
+
 registerForVrender();
 
 // VChart poptip theme
@@ -240,8 +245,28 @@ export class Scenegraph {
   initSceneGraph() {
     this.isPivot = this.table.isPivotTable();
     // (this.table as any).transpose = (this.table.options as any).transpose; // 初始化时this.table.transpose还未赋值
-
     initSceneGraph(this);
+  }
+
+  /**
+   * @description: 表格空数据或者少数据，在画布右键显示menu。col/row = -1 表示没有选中表格中的单元格
+   * @return {*}
+   */
+  canvasShowMenu() {
+    this.stage.addEventListener('rightdown', (e: FederatedPointerEvent) => {
+      const eventArgsSet: SceneEvent = getCellEventArgsSet(e);
+      if (!eventArgsSet.eventArgs) {
+        this.table.stateManager.triggerContextMenu(-1, -1, eventArgsSet.abstractPos.x, eventArgsSet.abstractPos.y);
+        this.table.fireListeners(TABLE_EVENT_TYPE.CONTEXTMENU_CANVAS, {
+          event: e,
+          x: eventArgsSet.abstractPos.x,
+          y: eventArgsSet.abstractPos.y,
+          col: -1,
+          row: -1,
+          target: undefined
+        });
+      }
+    });
   }
 
   /**
@@ -1471,7 +1496,9 @@ export class Scenegraph {
     if (this.table.options.animationAppear) {
       dealWithAnimationAppear(this.table);
     }
-
+    if (this.table.options.menu?.contextMenuWorkOnlyCell === false) {
+      this.canvasShowMenu();
+    }
     this.updateNextFrame();
   }
 
@@ -2186,7 +2213,8 @@ export class Scenegraph {
       // }
       for (let i = 0; i < updateRows.length; i++) {
         const row = updateRows[i];
-        const oldHeight = this.table.getRowHeight(row);
+        // const oldHeight = this.table.getRowHeight(row);
+        const oldHeight = this.table.rowHeightsMap.get(row); // 避免在小数情况下的自动取整
         const newHeight = computeRowHeight(row, 0, this.table.colCount - 1, this.table);
         if (
           (row >= this.proxy.rowStart && row <= this.proxy.rowEnd) ||

@@ -29,7 +29,7 @@ import type {
 export type { HeaderData } from './list-table/layout-map/api';
 import type { TableTheme } from '../themes/theme-define';
 import type { ICustomRender } from './customElement';
-import type { LayoutObjectId } from './table-engine';
+import type { GroupByOption, LayoutObjectId } from './table-engine';
 import type { Rect } from '../tools/Rect';
 import type { Scenegraph } from '../scenegraph/scenegraph';
 import type { StateManager } from '../state/state';
@@ -134,6 +134,8 @@ export interface IBaseTableProtected {
   rowSeriesNumber?: IRowSeriesNumber;
   /** 启动复选框级联 */
   enableCheckboxCascade?: boolean;
+  /** 表头复选框是否级联整列状态 */
+  enableHeaderCheckboxCascade?: boolean;
   columnSeriesNumber?: ColumnSeriesNumber[];
   // disableRowHeaderColumnResize?: boolean;
 
@@ -207,6 +209,8 @@ export interface IBaseTableProtected {
       | ((field: FieldDef, row: number, col: number, table?: BaseTableAPI) => MenuListItem[]);
     /** 设置选中状态的菜单。代替原来的option.dropDownMenuHighlight  */
     dropDownMenuHighlight?: DropDownMenuHighlightInfo[];
+    /** 右键菜单是否只工作在单元格上。默认true只在单元格上显示右键菜单, 配置false在空白处也弹出右键菜单  */
+    contextMenuWorkOnlyCell?: boolean;
     parentElement?: HTMLElement;
   };
   /** 提示弹框的相关配置。消失时机：显示后鼠标移动到指定区域外或者进入新的单元格后自动消失*/
@@ -292,6 +296,8 @@ export interface IBaseTableProtected {
 
   _oldRowCount?: number;
   _oldColCount?: number;
+
+  columnWidthConfig?: any;
 }
 export interface BaseTableConstructorOptions {
   // /** 指定表格的行数 */
@@ -428,6 +434,8 @@ export interface BaseTableConstructorOptions {
       | ((field: string, row: number, col: number, table?: BaseTableAPI) => MenuListItem[]);
     /** 设置选中状态的菜单。代替原来的option.dropDownMenuHighlight  */
     dropDownMenuHighlight?: DropDownMenuHighlightInfo[];
+    /** 右键菜单是否只工作在单元格上。默认true只在单元格上显示右键菜单, 配置false在空白处也弹出右键菜单  */
+    contextMenuWorkOnlyCell?: boolean;
     parentElement?: HTMLElement;
   };
   /** tooltip相关配置 */
@@ -546,6 +554,8 @@ export interface BaseTableConstructorOptions {
   rowSeriesNumber?: IRowSeriesNumber;
   /** 启用复选框级联 */
   enableCheckboxCascade?: boolean;
+  /** 表头复选框是否级联整列状态 */
+  enableHeaderCheckboxCascade?: boolean;
   // columnSeriesNumber?: ColumnSeriesNumber[];
   customCellStyle?: CustomCellStyle[];
   customCellStyleArrangement?: CustomCellStyleArrangement[];
@@ -790,6 +800,7 @@ export interface BaseTableAPI {
   getColsWidth: (startCol: number, endCol: number) => number;
   getColsWidths: () => number[];
   getRowsHeight: (startRow: number, endRow: number) => number;
+  _getRangeSizeForContainerFit: (start: number, end: number, totalSize: number, type: 'col' | 'row') => number;
 
   release: () => void;
   addReleaseObj: (releaseObj: { release: () => void }) => void;
@@ -808,6 +819,7 @@ export interface BaseTableAPI {
     makeSelectCellVisible?: boolean,
     skipBodyMerge?: boolean
   ) => void;
+  clearSelected: () => void;
   selectCells: (cellRanges: CellRange[]) => void;
   getAllRowsHeight: () => number;
   getAllColsWidth: () => number;
@@ -1046,6 +1058,12 @@ export interface ListTableProtected extends IBaseTableProtected {
     key: string;
     width: number;
   }[];
+
+  groupBy: GroupByOption;
+  groupTitleFieldFormat?: (record: any, col?: number, row?: number, table?: BaseTableAPI) => string;
+  groupTitleCustomLayout?: ICustomLayout;
+  enableTreeStickCell?: boolean;
+  groupTitleCheckbox?: boolean;
 }
 
 export interface PivotTableProtected extends IBaseTableProtected {
@@ -1089,4 +1107,12 @@ export interface PivotChartProtected extends IBaseTableProtected {
   columns?: (IColumnDimension | string)[]; // (string | IDimension)[];
   /** 定义指标具体配置项和样式定义 包含表头和body的定义*/
   indicators?: (IIndicator | string)[]; // (string | IIndicator)[];
+  columnWidthConfig?: {
+    dimensions: IDimensionInfo[];
+    width: number;
+  }[];
+  columnWidthConfigForRowHeader?: {
+    dimensions: IDimensionInfo[];
+    width: number;
+  }[];
 }

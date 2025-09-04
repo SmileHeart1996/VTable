@@ -1,6 +1,149 @@
 # Change Log - @visactor/vtable
 
-This log was last generated on Mon, 16 Jun 2025 12:04:55 GMT and should not be manually modified.
+This log was last generated on Fri, 29 Aug 2025 06:50:15 GMT and should not be manually modified.
+
+## 1.19.8
+Fri, 29 Aug 2025 06:50:15 GMT
+
+### Updates
+
+- fix: getLayoutRowTree api error #4346
+
+
+- fix: when has many columns expand columnTree scenegraph node y error #4357
+
+
+- refactor: contextmenu-click event arguments #4364
+
+
+- fix: columnWidthConfig not work when just has indicator on pivot table #4388
+
+
+
+## 1.19.7
+Mon, 18 Aug 2025 11:14:19 GMT
+
+_Version update only_
+
+## 1.19.6
+Fri, 08 Aug 2025 06:24:08 GMT
+
+### Updates
+
+- fix: pivot table set columnHierarchyType gird expand tree error #4254
+
+
+- fix: when no records markline render error #4305
+
+
+- feat: pivot chart add columnWidthConfig option
+
+
+- refactor: add table export plugin
+
+
+
+## 1.19.5
+Thu, 31 Jul 2025 11:30:27 GMT
+
+### Updates
+
+- feat: add enableHeaderCheckboxCascade option
+
+
+- refactor: when delete and add records update checkstate #4240
+
+
+- fix: setCellCheckboxState not work when tree column set checkbox cell type
+
+
+- feat: add  move_end_task_bar event for vtable-gantt.#4266
+
+
+
+## 1.19.4
+Mon, 28 Jul 2025 09:57:02 GMT
+
+### Updates
+
+- refactor: update merge cell performance #3293
+
+
+- feat: rowSeriesNumber support set field #3902
+
+
+- feat: add enableCheckboxCascade option #4130
+
+
+- feat: add groupConfig replace groupBy and group** & add titleCheckbox #4130
+
+
+- refactor: hide menu list when scroll #4214
+
+
+- feat: add getRecordHierarchyState api and fix change header position arguments #4226
+
+
+- fix: vchart trasnparent bgColor replace cell hover color #4245
+
+
+- fix: fix loading icon update in pivot-table #4236
+- feat: add paste-add-row plugin
+
+
+- Merge branch feat/paste-add-row-plugin into feat-pasted-add-row-col-plugin
+
+
+
+## 1.19.3
+Wed, 09 Jul 2025 09:24:55 GMT
+
+### Updates
+
+- feat: add contextmenuReturnAllSelectedCells api #4064
+
+
+- fix: click to edit cell not work with groupBy #4172
+
+
+- fix: 修复自定义编辑器复制粘贴时无法触发异步校验的问题
+
+
+- fix: handle frozen column calculation when container is invisible
+
+
+
+## 1.19.2
+Tue, 01 Jul 2025 10:26:51 GMT
+
+### Updates
+
+- fix: fix templateLink in export excel #4106
+- fix: list-tree delete root level error when using deleteRecords
+
+
+- fix: fix minWidth & maxWidth in autoFillWidth status #4100
+- fix: when updateColumns occor error with aggregation
+
+
+
+## 1.19.1
+Fri, 20 Jun 2025 12:11:39 GMT
+
+### Updates
+
+- feat: add containerFit #3337
+
+
+- chore: update vrender 1.0.4 fix animation bug
+
+
+- fix: copy not work when after copy tooltip text #3968
+
+
+- fix: fix the issue where the icon configuration is not effective when cellType is progressBar #4047
+
+
 
 ## 1.19.0
 Mon, 16 Jun 2025 12:04:55 GMT

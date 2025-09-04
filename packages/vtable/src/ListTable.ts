@@ -113,7 +113,7 @@ export class ListTable extends BaseTable implements ListTableAPI {
     this.pagination = options.pagination;
     internalProps.sortState = options.sortState;
     internalProps.multipleSort = !!options.multipleSort;
-    internalProps.dataConfig = options.groupBy ? getGroupByDataConfig(options.groupBy) : {}; //cloneDeep(options.dataConfig ?? {});
+    internalProps.dataConfig = this.internalProps.groupBy ? getGroupByDataConfig(this.internalProps.groupBy) : {}; //cloneDeep(options.dataConfig ?? {});
     internalProps.columns = options.columns
       ? cloneDeepSpec(options.columns, ['children']) // children for react
       : options.header
@@ -127,7 +127,8 @@ export class ListTable extends BaseTable implements ListTableAPI {
     //   }
     // });
 
-    internalProps.enableTreeNodeMerge = options.enableTreeNodeMerge ?? isValid(options.groupBy) ?? false;
+    internalProps.enableTreeNodeMerge =
+      options.enableTreeNodeMerge ?? isValid((this.internalProps as ListTableProtected).groupBy) ?? false;
 
     this.internalProps.headerHelper.setTableColumnsEditor();
     this.showHeader = options.showHeader ?? true;
@@ -152,7 +153,7 @@ export class ListTable extends BaseTable implements ListTableAPI {
     if (options.title) {
       const Title = Factory.getComponent('title') as ITitleComponent;
       internalProps.title = new Title(options.title, this);
-      this.scenegraph.resize();
+      // this.scenegraph.resize();//下面有个resize了 所以这个可以去掉
     }
     if (this.options.emptyTip) {
       if (this.internalProps.emptyTip) {
@@ -164,12 +165,16 @@ export class ListTable extends BaseTable implements ListTableAPI {
       }
     }
 
-    if (options.enableTreeStickCell) {
+    if ((this.internalProps as ListTableProtected).enableTreeStickCell) {
       const ListTreeStickCellPlugin = Factory.getComponent('listTreeStickCellPlugin') as IListTreeStickCellPlugin;
       this.listTreeStickCellPlugin = new ListTreeStickCellPlugin(this);
     }
     //为了确保用户监听得到这个事件 这里做了异步 确保vtable实例已经初始化完成
     setTimeout(() => {
+      if (this.isReleased) {
+        return;
+      }
+      this.resize();
       this.fireListeners(TABLE_EVENT_TYPE.INITIALIZED, null);
     }, 0);
   }
@@ -231,7 +236,7 @@ export class ListTable extends BaseTable implements ListTableAPI {
     this._hasAutoImageColumn = undefined;
     this.refreshHeader();
     this.dataSource.updateColumns?.(this.internalProps.columns);
-    if (this.records && checkHasAggregationOnColumnDefine(columns)) {
+    if (this.records && checkHasAggregationOnColumnDefine(this.internalProps.columns)) {
       this.dataSource.processRecords(this.dataSource.dataSourceObj?.records ?? this.dataSource.dataSourceObj);
     }
     this.internalProps.useOneRowHeightFillAll = false;
@@ -239,6 +244,34 @@ export class ListTable extends BaseTable implements ListTableAPI {
     this.headerStyleCache = new Map();
     this.bodyStyleCache = new Map();
     this.bodyBottomStyleCache = new Map();
+    this.scenegraph.createSceneGraph();
+    this.stateManager.updateHoverPos(oldHoverState.col, oldHoverState.row);
+    this.renderAsync();
+    this.eventManager.updateEventBinder();
+  }
+
+  /**
+   * 作为 `updateColumns` 的轻量级替代方案，用于仅需重新创建场景图而无需重新定义列的场景，
+   * 例如展开/折叠树形节点。此方法避免了 `updateColumns` 中开销较大的 `cloneDeepSpec` 深拷贝操作。
+   *
+   * 注意：此方法与 `updateColumns` 共享部分逻辑。如果将来修改了 `updateColumns`，
+   * 请务必检查此方法，以确保逻辑一致性，防止出现“逻辑漂移”。
+   */
+  private _recreateSceneForStateChange(): void {
+    this.scenegraph.clearCells();
+    const oldHoverState = { col: this.stateManager.hover.cellPos.col, row: this.stateManager.hover.cellPos.row };
+
+    this._hasAutoImageColumn = undefined;
+    this.refreshHeader();
+    if (this.records && checkHasAggregationOnColumnDefine(this.internalProps.columns)) {
+      this.dataSource.processRecords(this.dataSource.dataSourceObj?.records ?? this.dataSource.dataSourceObj);
+    }
+    this.internalProps.useOneRowHeightFillAll = false;
+
+    this.headerStyleCache = new Map();
+    this.bodyStyleCache = new Map();
+    this.bodyBottomStyleCache = new Map();
+    this._updateSize();
     this.scenegraph.createSceneGraph();
     this.stateManager.updateHoverPos(oldHoverState.col, oldHoverState.row);
     this.renderAsync();
@@ -318,7 +351,7 @@ export class ListTable extends BaseTable implements ListTableAPI {
         return title;
       }
       let value;
-      if ((this.options as ListTableConstructorOptions).groupBy) {
+      if ((this.internalProps as ListTableProtected).groupBy) {
         const record = table.getCellRawRecord(col, row);
         if (record?.vtableMerge) {
           return '';
@@ -329,7 +362,15 @@ export class ListTable extends BaseTable implements ListTableAPI {
         // const indexs = this.dataSource.currentIndexedData[row - this.columnHeaderLevelCount] as number[];
         // value = indexs[indexs.length - 1] + 1;
       } else {
-        value = row - this.columnHeaderLevelCount + 1;
+        const define = table.getBodyColumnDefine(col, row);
+        const checkboxSeriesNumberStyle = (table as ListTable).getFieldData(define.field, col, row);
+        if (typeof checkboxSeriesNumberStyle === 'string') {
+          value = checkboxSeriesNumberStyle;
+        } else if (checkboxSeriesNumberStyle?.text) {
+          value = checkboxSeriesNumberStyle.text ?? '';
+        } else {
+          value = row - this.columnHeaderLevelCount + 1;
+        }
       }
       const { format } = table.internalProps.layoutMap.getSeriesNumberBody(col, row);
       return typeof format === 'function' ? format(col, row, this, value) : value;
@@ -491,7 +532,9 @@ export class ListTable extends BaseTable implements ListTableAPI {
     this.pagination = options.pagination;
     internalProps.sortState = options.sortState;
     // internalProps.dataConfig = {}; // cloneDeep(options.dataConfig ?? {});
-    internalProps.dataConfig = options.groupBy ? getGroupByDataConfig(options.groupBy) : {}; //cloneDeep(options.dataConfig ?? {});
+    internalProps.dataConfig = (this.internalProps as ListTableProtected).groupBy
+      ? getGroupByDataConfig((this.internalProps as ListTableProtected).groupBy)
+      : {}; //cloneDeep(options.dataConfig ?? {});
     //更新protectedSpace
     this.showHeader = options.showHeader ?? true;
     internalProps.columns = options.columns
@@ -505,7 +548,8 @@ export class ListTable extends BaseTable implements ListTableAPI {
     //     internalProps.columns[index].editor = colDefine.editor;
     //   }
     // });
-    internalProps.enableTreeNodeMerge = options.enableTreeNodeMerge ?? isValid(options.groupBy) ?? false;
+    internalProps.enableTreeNodeMerge =
+      options.enableTreeNodeMerge ?? isValid((this.internalProps as ListTableProtected).groupBy) ?? false;
 
     this.internalProps.headerHelper.setTableColumnsEditor();
     // 处理转置
@@ -648,6 +692,10 @@ export class ListTable extends BaseTable implements ListTableAPI {
       table.rowCount = layoutMap.recordsCount * layoutMap.bodyRowSpanCount + layoutMap.headerLevelCount;
       // table.frozenColCount = table.options.frozenColCount ?? 0; //这里不要这样写 这个setter会检查扁头宽度 可能将frozenColCount置为0
       this.internalProps.frozenColCount = this.options.frozenColCount ?? 0;
+      // 当冻结列数大于等于列数时，则冻结列数置为0，可以查看demo中的list-groupBy.ts来调试这个问题
+      if (this.options.frozenColCount >= this.colCount) {
+        this.internalProps.frozenColCount = 0;
+      }
       table.frozenRowCount = Math.max(layoutMap.headerLevelCount, this.options.frozenRowCount ?? 0);
 
       if (table.bottomFrozenRowCount !== (this.options.bottomFrozenRowCount ?? 0)) {
@@ -860,7 +908,11 @@ export class ListTable extends BaseTable implements ListTableAPI {
     if (this.isHeader(col, row)) {
       return (this._getHeaderLayoutMap(col, row) as HeaderData)?.hierarchyState;
     }
-    if (!this.options.groupBy || (isArray(this.options.groupBy) && this.options.groupBy.length === 0)) {
+    if (
+      !(this.internalProps as ListTableProtected).groupBy ||
+      (isArray((this.internalProps as ListTableProtected).groupBy) &&
+        ((this.internalProps as ListTableProtected).groupBy as string[]).length === 0)
+    ) {
       const define = this.getBodyColumnDefine(col, row) as ColumnDefine;
       if (!define.tree) {
         return HierarchyState.none;
@@ -868,6 +920,21 @@ export class ListTable extends BaseTable implements ListTableAPI {
     }
     const index = this.getRecordShowIndexByCell(col, row);
     return this.dataSource.getHierarchyState(index);
+  }
+  /**
+   * 获取单元格所在数据源的层级节点收起展开的状态
+   * @param col
+   * @param row
+   * @returns
+   */
+  getRecordHierarchyState(col: number, row: number) {
+    let recordIndex;
+    if (this.transpose) {
+      this.getRecordShowIndexByCell(col, 0);
+    } else {
+      recordIndex = this.getRecordShowIndexByCell(0, row);
+    }
+    return this.dataSource.getHierarchyState(recordIndex);
   }
   /**
    * 表头切换层级状态
@@ -1123,6 +1190,7 @@ export class ListTable extends BaseTable implements ListTableAPI {
     this.refreshRowColCount();
     this.stateManager.initCheckedState(this.records);
     this.scenegraph.createSceneGraph();
+    this.resize();
   }
   /** 获取某个字段下checkbox 全部数据的选中状态 顺序对应原始传入数据records 不是对应表格展示row的状态值 */
   getCheckboxState(field?: string | number) {
@@ -1273,11 +1341,13 @@ export class ListTable extends BaseTable implements ListTableAPI {
     this.clearCellStyleCache();
     this.scenegraph.createSceneGraph();
     this.stateManager.updateHoverPos(oldHoverState.col, oldHoverState.row);
+
+    this._updateSize();
     if (this.internalProps.title && !this.internalProps.title.isReleased) {
-      this._updateSize();
       this.internalProps.title.resize();
-      this.scenegraph.resize();
     }
+    this.scenegraph.resize();
+
     if (this.options.emptyTip) {
       if (this.internalProps.emptyTip) {
         this.internalProps.emptyTip?.resetVisible();
@@ -1517,7 +1587,7 @@ export class ListTable extends BaseTable implements ListTableAPI {
   }
 
   getGroupTitleLevel(col: number, row: number): number | undefined {
-    if (!(this.options as ListTableConstructorOptions).groupBy) {
+    if (!(this.internalProps as ListTableProtected).groupBy) {
       return undefined;
     }
     const indexArr = this.dataSource.getIndexKey(this.getRecordShowIndexByCell(col, row));
@@ -1539,25 +1609,70 @@ export class ListTable extends BaseTable implements ListTableAPI {
     return this.dataSource.getTableIndex(index);
   }
 
-  /** 解析配置columnWidthConfig传入的列宽配置 */
-  _parseColumnWidthConfig(columnWidthConfig: { key: string; width: number }[]) {
-    for (let i = 0; i < columnWidthConfig?.length; i++) {
-      const item = columnWidthConfig[i];
-      const key = item.key;
-      const width = item.width;
-      const columnData = this.internalProps.layoutMap.getColumnByKey(key);
-      if (columnData.columnDefine) {
-        const { col } = columnData;
-        if (!this.internalProps._widthResizedColMap.has(col)) {
-          this._setColWidth(col, width);
-          this.internalProps._widthResizedColMap.add(col); // add resize tag
-        }
-      }
-    }
-  }
-
   release() {
     this.editorManager.release();
     super.release();
+  }
+
+  /**
+   * 展开所有树形节点
+   */
+  expandAllTreeNode(): void {
+    if (!this._hasHierarchyTreeHeader()) {
+      return;
+    }
+
+    let stateChanged = false;
+
+    // 展开所有数据行节点
+    if (this.dataSource && typeof (this.dataSource as any).expandAllNodes === 'function') {
+      (this.dataSource as any).expandAllNodes();
+      stateChanged = true;
+    }
+
+    // 刷新视图
+    if (stateChanged) {
+      // 使用轻量级的更新管道，而非重量级的 `updateColumns`。
+      // 这个新方法会处理表头刷新、场景创建和渲染。
+      this._recreateSceneForStateChange();
+
+      this.fireListeners(TABLE_EVENT_TYPE.TREE_HIERARCHY_STATE_CHANGE, {
+        col: -1, // 表示非特定单元格操作
+        row: -1,
+        hierarchyState: HierarchyState.expand,
+        originData: { children: this.records }
+      });
+    }
+  }
+
+  /**
+   * 折叠所有树形节点
+   */
+  collapseAllTreeNode(): void {
+    if (!this._hasHierarchyTreeHeader()) {
+      return;
+    }
+
+    let stateChanged = false;
+
+    // 折叠所有数据行节点
+    if (this.dataSource && typeof (this.dataSource as any).collapseAllNodes === 'function') {
+      (this.dataSource as any).collapseAllNodes();
+      stateChanged = true;
+    }
+
+    // 刷新视图
+    if (stateChanged) {
+      // 使用轻量级的更新管道，而非重量级的 `updateColumns`。
+      // 这个新方法会处理表头刷新、场景创建和渲染。
+      this._recreateSceneForStateChange();
+
+      this.fireListeners(TABLE_EVENT_TYPE.TREE_HIERARCHY_STATE_CHANGE, {
+        col: -1,
+        row: -1,
+        hierarchyState: HierarchyState.collapse,
+        originData: { children: this.records }
+      });
+    }
   }
 }

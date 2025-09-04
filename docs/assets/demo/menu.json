@@ -1203,6 +1203,13 @@
             "zh": "自定义角头单元格",
             "en": "Custom Corner Cell"
           }
+        },
+        {
+          "path": "cell-custom-reactive-layout",
+          "title": {
+            "zh": "单元格自定义响应式布局",
+            "en": "cell custom reactive layout"
+          }
         }
       ]
     },
@@ -1332,6 +1339,22 @@
           "title": {
             "zh": "透视表上钻下钻",
             "en": "Pivot Table Drill"
+          }
+        },
+        {
+          "path": "pivot-analysis-updateTotalData",
+          "title": {
+            "zh": "透视维度小计总计动态更新",
+            "en": "Pivot Analysis Update Subtotal Total Using Editor"
+          },
+          "meta": {
+            "title": "Pivot Analysis Update Subtotal Total Using Editor",
+            "keywords": "pivot table, edit, aggregation, total, subtotal, updateAggregationOnEditCell",
+            "category": "demo",
+            "group": "Data Analysis",
+            "cover": "https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/VTable/preview/pivot-analysis-total.png",
+            "link": "data_analysis/pivot_table_dataAnalysis",
+            "option": "PivotTable#dataConfig.updateAggregationOnEditCell"
           }
         }
       ]

@@ -106,7 +106,7 @@ Maximum freezing width, fixed value or percentage. Default is '80%'
 
 #${prefix} unfreezeAllOnExceedsMaxWidth(boolean) = true
 
-Whether to defrost after the maximum freezing width is exceeded. The default value is true
+Whether to defrost after the maximum freezing width is exceeded. The default value is true. If set to false, it will not unfreeze all columns, but will determine the number of columns to be unfrozen according to the value of maxFrozenWidth.
 
 #${prefix} allowFrozenColCount(number) = 0
 
@@ -152,7 +152,7 @@ defaultHeaderColWidth?: (number | 'auto') | (number | 'auto')[];
 
 Shortcut key function settings, specific configuration items:
 
-##${prefix} selectAllOnCtrlA(boolean) = false
+##${prefix} selectAllOnCtrlA(boolean) = false|SelectAllOnCtrlAOption
 Enable the shortcut key Select All.
 Supports `boolean` or specific configuration type `SelectAllOnCtrlAOption`.
 
@@ -162,6 +162,11 @@ disableHeaderSelect?: boolean; //Whether to disable header selection when the sh
 disableRowSeriesNumberSelect?: boolean; //Whether to disable the selection of row sequence numbers when the shortcut key is used to select all.
 }
 ```
+###${prefix} disableHeaderSelect(boolean) = false
+Whether to disable header selection when the shortcut key is used to select all.
+
+###${prefix} disableRowSeriesNumberSelect(boolean) = false
+Whether to disable the selection of row sequence numbers when the shortcut key is used to select all.
 
 ##${prefix} copySelected(boolean) = false
 
@@ -201,6 +206,10 @@ Issue settings related to event triggering, specific configuration items:
 
 ##${prefix} preventDefaultContextMenu(boolean) = true
 prevent the default behavior of the right mouse button
+
+##${prefix} contextmenuReturnAllSelectedCells(boolean) = true
+
+Whether to return all selected cells information to the user in the contextmenu event parameter. Default is true. If you do not need it, it is best to set it to false.
 
 #${prefix} excelOptions(Object)
 
@@ -340,6 +349,10 @@ Set the selected state of the menu. Declaration type is `DropDownMenuHighlightIn
 
 {{ use: common-IDimensionInfo()}}
 
+##${prefix} contextMenuWorkOnlyCell(boolean)
+
+Right-click menu works only on cells. Default is true, only on cells display right-click menu, configure false, also pop up right-click menu on blank area.
+
 #${prefix} title(Object)
 
 {{ use: common-title(
@@ -377,6 +390,11 @@ The overflow text tooltip delays disappearance time. If you need to delay disapp
 ##${prefix} confine (boolean) = true
 
 Whether to confine the tooltip box within the canvas area, default is enabled. It is valid for renderMode:"html".
+
+##${prefix} position(string) = 'top'
+
+Tooltip box position, optional top left right bottom
+
 
 #${prefix} legends
 
@@ -423,6 +441,10 @@ Example:
     ]
 }
 ```
+
+#${prefix} chartOption(Object)
+
+Same as VChart's Option configuration. Will be merged with the standard chart Option configuration in the table, and then used in the chart.
 
 #${prefix} customRender(Function|Object)
 
@@ -692,3 +714,14 @@ Validate when the drag to move position ends.
 validateDragOrderOnEnd?: (source: CellAddress, target: CellAddress) => boolean;
 ```
 
+#${prefix} canvas(HTMLCanvasElement)
+
+The canvas element of the table. Default value is null. If you need to render the table in an existing canvas, you need to configure this property.
+
+#${prefix} viewBox({x1: number, y1: number, x2: number, y2: number})
+
+The position and size of the table in the canvas. Only need to configure this property when the canvas property is configured.
+
+#${prefix} disableInteraction(boolean) = false
+
+Whether to disable all interactions of the table.
